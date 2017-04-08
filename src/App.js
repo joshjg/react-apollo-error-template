@@ -1,7 +1,35 @@
 import React, { Component } from 'react';
-import { gql, graphql } from 'react-apollo';
+import { gql, graphql, withApollo } from 'react-apollo';
+
+const query = gql`{
+  people {
+    id
+    name
+    pets {
+      ... on Cat {
+        name
+      }
+      ... on Dog {
+        needsWalk
+      }
+    }
+  }
+}`;
 
 class App extends Component {
+  addPerson = () => {
+    const client = this.props.client;
+    const currentData = client.readQuery({query});
+    currentData.people.push({
+      id: 4,
+      name: 'Jane Doe',
+      __typename: 'Person'
+    });
+    client.writeQuery({
+      query,
+      data: currentData
+    });
+  }
   render() {
     const { data: { loading, people } } = this.props;
     return (
@@ -19,6 +47,7 @@ class App extends Component {
             The GraphQL schema is in <code>./src/graphql/schema</code>.
             Currently the schema just serves a list of people with names and ids.
           </p>
+          <button type="button" onClick={this.addPerson}>Add person</button>
         </header>
         {loading ? (
           <p>Loading…</p>
@@ -36,11 +65,4 @@ class App extends Component {
   }
 }
 
-export default graphql(
-  gql`{
-    people {
-      id
-      name
-    }
-  }`,
-)(App)
+export default graphql(query)(withApollo(App));
